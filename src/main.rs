@@ -14,8 +14,9 @@ fn main() -> std::io::Result<()> {
 
     for stream in listener.incoming() {
         let stream = stream?;
+        let request = Request::new(stream)?;
         thread::spawn(|| {
-            if let Err(e) = handle_request(stream) {
+            if let Err(e) = handle_request(request) {
                 eprintln!("Failed to handle request: {}", e);
             }
         });
@@ -24,19 +25,16 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn handle_request(mut stream: TcpStream) -> std::io::Result<()> {
-    let request = Request::new(&stream)?;
-
+fn handle_request(mut request: Request) -> std::io::Result<()> {
     if request.get_location() == "/favicon.ico" {
-        let response = Response::new(204);
-        stream.write_all(&response.craft_response_headers())?;
+        let mut response = Response::new(204);
+        request.respond(&mut response)?;
         return Ok(());
     }
 
     let file = File::open("./cats/cat.jpg")?;
     let mut response = Response::new_with_file(200, "image/jpeg", file, "cat")?;
-    stream.write_all(&response.craft_response_headers())?;
-    response.stream_body(&mut stream)?;
+    request.respond(&mut response)?;
 
     Ok(())
 }

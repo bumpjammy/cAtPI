@@ -1,14 +1,16 @@
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
+use crate::response::Response;
 
 pub struct Request {
+    stream: TcpStream,
     request_string: String
 }
 
 impl Request {
-    pub fn new(stream: &TcpStream) -> std::io::Result<Self> {
+    pub fn new(mut stream: TcpStream) -> std::io::Result<Request> {
 
-        let mut reader = BufReader::new(stream);
+        let mut reader = BufReader::new(&mut stream);
         let mut request_string = String::new();
         loop {
             let mut line = String::new();
@@ -20,6 +22,7 @@ impl Request {
         }
 
         Ok(Request {
+            stream,
             request_string
         })
     }
@@ -38,6 +41,12 @@ impl Request {
             Some(value) => value,
             None => "404",
         }
+    }
+
+    pub fn respond(&mut self, response: &mut Response) -> std::io::Result<()> {
+        self.stream.write_all(&*response.craft_response_headers())?;
+        response.stream_body(&mut self.stream)?;
+        Ok(())
     }
 }
 
