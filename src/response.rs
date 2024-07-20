@@ -39,10 +39,12 @@ impl Response {
         new_response
     }
 
-    pub fn new_with_file(status_code: u16, file_type: &str, file: File, file_name: &str) -> io::Result<Self> {
+    pub fn new_with_file(status_code: u16, file: File, file_name: &str) -> io::Result<Self> {
         let file_size = file.metadata()?.len();
         let mut new_response = Self::new(status_code);
-        new_response.headers.push(("Content-Type".to_string(), file_type.to_string()));
+        let file_extension = file_name.split(".").last().unwrap_or_else(|| "");
+
+        new_response.headers.push(("Content-Type".to_string(), get_content_type(file_extension).to_string()));
         new_response.headers.push(("Content-Length".to_string(), file_size.to_string()));
         new_response.headers.push(("Content-Disposition".to_string(), format!("inline; filename=\"{}\"", file_name)));
         new_response.body = Some(Body::File(file));
@@ -87,5 +89,26 @@ fn get_status_text(status_code: u16) -> String {
         204 => "No Content".to_string(),
         404 => "Not Found".to_string(),
         _ => "Unknown".to_string(),
+    }
+}
+
+fn get_content_type(extension: &str) -> &str {
+    match extension {
+        "html" => "text/html",
+        "htm" => "text/html",
+        "jpg" => "image/jpeg",
+        "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        "css" => "text/css",
+        "js" => "application/javascript",
+        "json" => "application/json",
+        "xml" => "application/xml",
+        "txt" => "text/plain",
+        "pdf" => "application/pdf",
+        "zip" => "application/zip",
+        "mp3" => "audio/mpeg",
+        "mp4" => "video/mp4",
+        _ => "application/octet-stream",
     }
 }
