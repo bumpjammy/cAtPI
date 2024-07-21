@@ -1,9 +1,10 @@
 use std::fs::File;
 use std::io::{BufRead, Write};
 use std::net::{TcpListener};
-use std::{thread};
+use std::{fs, thread};
 use std::path::{Path, PathBuf};
-use crate::request::Request;
+use std::time::{SystemTime, UNIX_EPOCH};
+use crate::request::{Request, RequestType};
 use crate::response::Response;
 
 mod response;
@@ -26,16 +27,17 @@ fn main() -> std::io::Result<()> {
 }
 
 fn handle_request(mut request: Request) -> std::io::Result<()> {
-    if request.get_location() == "/favicon.ico" {
-        let mut response = Response::new(204);
+    let (mut response, file, file_name);
+
+    if matches!(request.get_type(), RequestType::GET) {
+        if request.get_location() == "/cat" {
+            (file, file_name) = get_random_kitty()?;
+        } else {
+            (file, file_name) = safe_open(request.get_location())?;
+        }
+        response = Response::new_with_file(200, file, file_name.as_str())?;
         request.respond(&mut response)?;
-        return Ok(());
     }
-
-    let (file, file_name) = safe_open(request.get_location())?;
-
-    let mut response = Response::new_with_file(200, file, file_name.as_str())?;
-    request.respond(&mut response)?;
 
     Ok(())
 }
@@ -58,5 +60,30 @@ fn safe_open(request_location: &str) -> std::io::Result<(File, String)> {
         }
     }
 
-    Ok((File::open("./cats/404.png")?, "404.png".to_string()))
+    Ok((File::open("./public/404.png")?, "404.png".to_string()))
+}
+
+fn get_random_kitty() -> std::io::Result<(File, String)>{
+    let mut cats = Vec::new();
+
+    let paths = fs::read_dir("./public/cats")?;
+    for path in paths {
+        let file_name = path?.file_name();
+        if let Some(file_name) = file_name.to_str() {
+            if file_name.contains("README") { continue }
+            cats.push(file_name.to_string());
+        }
+    }
+
+    let rand_num = basic_get_rand(cats.len());
+    if let Some(the_chosen_one) = cats.get(rand_num) {
+        safe_open(format!("/cats/{}", the_chosen_one).as_str())
+    } else {
+        safe_open("/404.png")
+    }
+}
+
+fn basic_get_rand(max: usize) -> usize {
+    let time = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards");
+    time.as_nanos() as usize % max
 }
