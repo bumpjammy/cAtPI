@@ -29,7 +29,7 @@ impl Request {
 
     pub fn get_type(&self) -> RequestType {
         let parts: Vec<&str> = self.request_string.split_whitespace().collect();
-        match parts.get(0) {
+        match parts.first() {
             Some(value) => RequestType::from_value(value),
             None => RequestType::GET
         }
@@ -44,7 +44,7 @@ impl Request {
     }
 
     pub fn respond(&mut self, response: &mut Response) -> std::io::Result<()> {
-        self.stream.write_all(&*response.craft_response_headers())?;
+        self.stream.write_all(&response.craft_response_headers())?;
         response.stream_body(&mut self.stream)?;
         Ok(())
     }

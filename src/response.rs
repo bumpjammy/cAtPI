@@ -42,7 +42,7 @@ impl Response {
     pub fn new_with_file(status_code: u16, file: File, file_name: &str) -> io::Result<Self> {
         let file_size = file.metadata()?.len();
         let mut new_response = Self::new(status_code);
-        let file_extension = file_name.split(".").last().unwrap_or_else(|| "");
+        let file_extension = file_name.split('.').last().unwrap_or("");
 
         new_response.headers.push(("Content-Type".to_string(), get_content_type(file_extension).to_string()));
         new_response.headers.push(("Content-Length".to_string(), file_size.to_string()));

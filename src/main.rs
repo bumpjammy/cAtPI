@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, Write};
-use std::net::{TcpListener};
+use std::net::TcpListener;
 use std::{fs, thread};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -43,7 +42,7 @@ fn handle_request(mut request: Request) -> std::io::Result<()> {
 }
 
 fn safe_open(request_location: &str) -> std::io::Result<(File, String)> {
-    let mut file_name = request_location.replacen("/", "", 1);
+    let mut file_name = request_location.replacen('/', "", 1);
 
     if file_name.is_empty() {
         file_name = "index.html".to_string();
@@ -56,7 +55,7 @@ fn safe_open(request_location: &str) -> std::io::Result<(File, String)> {
         let public_path = Path::new("./public").canonicalize()?;
         if canonicalized_path.starts_with(public_path) {
             let file = File::open(canonicalized_path)?;
-            return Ok((file, file_name.split("/").last().unwrap_or("").to_string()))
+            return Ok((file, file_name.split('/').last().unwrap_or("").to_string()))
         }
     }
 
