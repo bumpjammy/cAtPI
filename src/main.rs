@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fs::File;
 use std::net::TcpListener;
 use std::{fs, thread};
@@ -8,6 +10,7 @@ use crate::response::Response;
 
 mod response;
 mod request;
+
 
 fn main() -> std::io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080")?;
